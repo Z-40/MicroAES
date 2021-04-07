@@ -1,12 +1,21 @@
+import doctest
 from constants import SUBSTITUTION_BOX, INVERSE_SUBSTITUTION_BOX
 
 def xor_bytes(a, b):
-    """ xor 2 byte strings """
+    """
+    xor 2 byte strings 
+    >>> xor_bytes(b"abc", b"xyz")
+    b'\x19\x1b\x19'
+    """
     return bytes([x ^ y for x, y in zip(a, b)])
 
 
 def to_grid(text):
-    """ convert ``text`` into a 4x4 grid """
+    """ 
+    Convert ``text`` into a 4x4 grid, ``text`` must be 16 characters long
+    >>> to_grid(b"abcdefghijklmnop")
+    [[97, 98, 99, 100], [101, 102, 103, 104], [105, 106, 107, 108], [109, 110, 111, 112]]
+    """
     # make sure that the length of ``text`` is 16 bytes
     assert len(text) == 16
 
@@ -18,7 +27,11 @@ def to_grid(text):
 
 
 def substitute(grid): 
-    """ substitute each byte of the ``grid`` using the s-box"""
+    """ 
+    Substitute each byte of the ``grid`` using the s-box
+    >>> substitute(to_grid(b"abcdefghijklmnop"))
+    [[239, 170, 251, 67], [77, 51, 133, 69], [249, 2, 127, 80], [60, 159, 168, 81]]
+    """
     for x in range(4):
         for y in range(4):
             grid[x][y] = SUBSTITUTION_BOX[grid[x][y]]
@@ -26,9 +39,17 @@ def substitute(grid):
     return grid
 
 def substitute_inverse(grid):
-    """ get the original bytes of the ``grid`` using inverse s-box"""
+    """
+    Get the original bytes of the ``grid`` using inverse s-box
+    >>> inv = substitute_inverse(substitute(to_grid(b"abcdefghijklmnop")))
+    >>> assert inv == to_grid(b"abcdefghijklmnop")
+    """
     for x in range(4):
         for y in range(4):
             grid[x][y] = INVERSE_SUBSTITUTION_BOX[grid[x][y]]
 
     return grid
+
+
+if __name__ == "__main__":
+    doctest.testmod(verbose=True)
