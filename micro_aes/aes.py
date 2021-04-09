@@ -92,6 +92,29 @@ def shift_rows(grid):
     return grid
 
 
-if __name__ == "__main__":
-    doctest.testmod(verbose=True)
+def shift_rows_inverse(grid):
+    """ Reverse the shift rows step """
+    # shift 2nd row
+    grid[1][1], grid[1][2], grid[1][3], grid[1][0]= \
+        grid[1][0], grid[1][1], grid[1][2], grid[1][3]
 
+    # shift 3rd row
+    grid[2][2], grid[2][3], grid[2][0], grid[2][1] = \
+        grid[2][0], grid[2][1], grid[2][2], grid[2][3]
+
+    # shift 4th row
+    grid[3][3], grid[3][0], grid[3][1], grid[3][2] = \
+        grid[3][0], grid[3][1], grid[3][2], grid[3][3]
+
+    return grid
+
+
+if __name__ == "__main__":
+    grid = to_grid(b"abcdefghijklmnop")
+    print(grid)
+    print()
+    grid = shift_rows(grid)
+    print(grid)
+    print()
+    print(shift_rows_inverse(grid))
+    doctest.testmod(verbose=True)
