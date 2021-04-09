@@ -1,5 +1,8 @@
+import typing
 import doctest
-from constants import SUBSTITUTION_BOX, INVERSE_SUBSTITUTION_BOX
+from constants import SUBSTITUTION_BOX
+from constants import INVERSE_SUBSTITUTION_BOX
+
 
 def xor_bytes(a, b):
     """
@@ -38,6 +41,7 @@ def substitute(grid):
 
     return grid
 
+
 def substitute_inverse(grid):
     """
     Get the original bytes of the ``grid`` using inverse s-box
@@ -49,6 +53,27 @@ def substitute_inverse(grid):
             grid[x][y] = INVERSE_SUBSTITUTION_BOX[grid[x][y]]
 
     return grid
+
+
+def mix_single_column(column):
+    """ 
+    Mix a single column of the grid using the multiplication matrix:
+    (2, 3, 1, 1)
+    (1, 2, 3, 1)
+    (1, 1, 2, 3)
+    (3, 1, 1, 2)
+    """
+    column[0] = (column[0] * 2) ^ (column[1] * 3) ^ (column[2] * 1) ^ (column[3] * 1)
+    column[1] = (column[0] * 1) ^ (column[1] * 2) ^ (column[2] * 3) ^ (column[3] * 1)
+    column[2] = (column[0] * 1) ^ (column[1] * 1) ^ (column[2] * 2) ^ (column[3] * 3)
+    column[3] = (column[0] * 2) ^ (column[1] * 1) ^ (column[2] * 1) ^ (column[3] * 2)
+
+    return [x for x in column]
+
+
+def mix_columns(grid):
+    """ Mix all columns in the ``grid`` """
+    return [mix_single_column(x) for x in grid]        
 
 
 if __name__ == "__main__":
