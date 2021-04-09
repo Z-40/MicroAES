@@ -1,4 +1,3 @@
-import typing
 import doctest
 from constants import SUBSTITUTION_BOX
 from constants import INVERSE_SUBSTITUTION_BOX
@@ -73,8 +72,26 @@ def mix_single_column(column):
 
 def mix_columns(grid):
     """ Mix all columns in the ``grid`` """
-    return [mix_single_column(x) for x in grid]        
+    return [mix_single_column(x) for x in grid] 
+
+
+def shift_rows(grid): 
+    """ Shift rows of the ``grid`` """
+    # shift 2nd row
+    grid[1][0], grid[1][1], grid[1][2], grid[1][3] = \
+        grid[1][1], grid[1][2], grid[1][3], grid[1][0]
+
+    # shift 3rd row
+    grid[2][0], grid[2][1], grid[2][2], grid[2][3] = \
+        grid[2][2], grid[2][3], grid[2][0], grid[2][1]
+
+    # shift 4th row
+    grid[3][0], grid[3][1], grid[3][2], grid[3][3] = \
+        grid[3][3], grid[3][0], grid[3][1], grid[3][2]
+
+    return grid
 
 
 if __name__ == "__main__":
     doctest.testmod(verbose=True)
+
