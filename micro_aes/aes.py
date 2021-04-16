@@ -100,16 +100,13 @@ def mix_columns(grid):
 def shift_rows(grid):
     """ Shift rows of the ``grid`` """
     # shift 2nd row
-    grid[1][0], grid[1][1], grid[1][2], grid[1][3] = \
-        grid[1][1], grid[1][2], grid[1][3], grid[1][0]
+    grid[1][0], grid[1][1], grid[1][2], grid[1][3] = grid[1][1], grid[1][2], grid[1][3], grid[1][0]
 
     # shift 3rd row
-    grid[2][0], grid[2][1], grid[2][2], grid[2][3] = \
-        grid[2][2], grid[2][3], grid[2][0], grid[2][1]
+    grid[2][0], grid[2][1], grid[2][2], grid[2][3] = grid[2][2], grid[2][3], grid[2][0], grid[2][1]
 
     # shift 4th row
-    grid[3][0], grid[3][1], grid[3][2], grid[3][3] = \
-        grid[3][3], grid[3][0], grid[3][1], grid[3][2]
+    grid[3][0], grid[3][1], grid[3][2], grid[3][3] = grid[3][3], grid[3][0], grid[3][1], grid[3][2]
 
     return grid
 
@@ -117,16 +114,13 @@ def shift_rows(grid):
 def shift_rows_inverse(grid):
     """ Reverse the shift rows step """
     # shift 2nd row
-    grid[1][1], grid[1][2], grid[1][3], grid[1][0] = \
-        grid[1][0], grid[1][1], grid[1][2], grid[1][3]
+    grid[1][1], grid[1][2], grid[1][3], grid[1][0] = grid[1][0], grid[1][1], grid[1][2], grid[1][3]
 
     # shift 3rd row
-    grid[2][2], grid[2][3], grid[2][0], grid[2][1] = \
-        grid[2][0], grid[2][1], grid[2][2], grid[2][3]
+    grid[2][2], grid[2][3], grid[2][0], grid[2][1] = grid[2][0], grid[2][1], grid[2][2], grid[2][3]
 
     # shift 4th row
-    grid[3][3], grid[3][0], grid[3][1], grid[3][2] = \
-        grid[3][0], grid[3][1], grid[3][2], grid[3][3]
+    grid[3][3], grid[3][0], grid[3][1], grid[3][2] = grid[3][0], grid[3][1], grid[3][2], grid[3][3]
 
     return grid
 
