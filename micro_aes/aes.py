@@ -6,7 +6,7 @@ from constants import INVERSE_SUBSTITUTION_BOX
 def xor_bytes(a, b):
     """
     xor 2 byte strings
-    
+
     >>> xor_bytes(b"abc", b"xyz")
     b'\x19\x1b\x19'
     """
@@ -14,7 +14,7 @@ def xor_bytes(a, b):
 
 
 def to_grid(text):
-    """ 
+    """
     Convert ``text`` into a 4x4 grid, ``text`` must be 16 characters long
 
     >>> to_grid(b"abcdefghijklmnop")
@@ -30,8 +30,15 @@ def to_grid(text):
     return grid
 
 
-def substitute(grid): 
-    """ 
+def from_grid(grid):
+    """
+    Convert ``grid`` into a string of 16 characters
+    """
+    return bytes(sum(grid, []))
+
+
+def substitute(grid):
+    """
     Substitute each byte of the ``grid`` using the s-box
 
     >>> substitute(to_grid(b"abcdefghijklmnop"))
@@ -59,7 +66,7 @@ def substitute_inverse(grid):
 
 
 def mix_single_column(column):
-    """ 
+    """
     Mix a single column of the grid using the multiplication matrix:
     -----------------
     | 2 | 3 | 1 | 1 |
@@ -87,10 +94,10 @@ def mix_columns(grid):
     >>> mix_columns(to_grid(b"abcdefghijklmnop"))
     [[483, 106, 99, 775], [503, 102, 103, 831], [491, 18, 107, 887], [399, 110, 111, 1023]]
     """
-    return [mix_single_column(x) for x in grid] 
+    return [mix_single_column(x) for x in grid]
 
 
-def shift_rows(grid): 
+def shift_rows(grid):
     """ Shift rows of the ``grid`` """
     # shift 2nd row
     grid[1][0], grid[1][1], grid[1][2], grid[1][3] = \
