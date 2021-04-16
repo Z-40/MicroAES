@@ -5,7 +5,8 @@ from constants import INVERSE_SUBSTITUTION_BOX
 
 def xor_bytes(a, b):
     """
-    xor 2 byte strings 
+    xor 2 byte strings
+    
     >>> xor_bytes(b"abc", b"xyz")
     b'\x19\x1b\x19'
     """
@@ -15,6 +16,7 @@ def xor_bytes(a, b):
 def to_grid(text):
     """ 
     Convert ``text`` into a 4x4 grid, ``text`` must be 16 characters long
+
     >>> to_grid(b"abcdefghijklmnop")
     [[97, 98, 99, 100], [101, 102, 103, 104], [105, 106, 107, 108], [109, 110, 111, 112]]
     """
@@ -31,6 +33,7 @@ def to_grid(text):
 def substitute(grid): 
     """ 
     Substitute each byte of the ``grid`` using the s-box
+
     >>> substitute(to_grid(b"abcdefghijklmnop"))
     [[239, 170, 251, 67], [77, 51, 133, 69], [249, 2, 127, 80], [60, 159, 168, 81]]
     """
@@ -44,6 +47,7 @@ def substitute(grid):
 def substitute_inverse(grid):
     """
     Get the original bytes of the ``grid`` using inverse s-box
+
     >>> inv = substitute_inverse(substitute(to_grid(b"abcdefghijklmnop")))
     >>> assert inv == to_grid(b"abcdefghijklmnop")
     """
@@ -57,11 +61,17 @@ def substitute_inverse(grid):
 def mix_single_column(column):
     """ 
     Mix a single column of the grid using the multiplication matrix:
-    (2, 3, 1, 1)
-    (1, 2, 3, 1)
-    (1, 1, 2, 3)
-    (3, 1, 1, 2)
+    -----------------
+    | 2 | 3 | 1 | 1 |
+    | 1 | 2 | 3 | 1 |
+    | 1 | 1 | 2 | 3 |
+    | 3 | 1 | 1 | 2 |
+    -----------------
+
+    >>> mix_single_column([1, 3, 5, 7])
+    [9, 7, 17, 10]
     """
+    assert len(column) == 4
     column[0] = (column[0] * 2) ^ (column[1] * 3) ^ (column[2] * 1) ^ (column[3] * 1)
     column[1] = (column[0] * 1) ^ (column[1] * 2) ^ (column[2] * 3) ^ (column[3] * 1)
     column[2] = (column[0] * 1) ^ (column[1] * 1) ^ (column[2] * 2) ^ (column[3] * 3)
@@ -71,7 +81,12 @@ def mix_single_column(column):
 
 
 def mix_columns(grid):
-    """ Mix all columns in the ``grid`` """
+    """
+    Mix all columns in the ``grid``
+
+    >>> mix_columns(to_grid(b"abcdefghijklmnop"))
+    [[483, 106, 99, 775], [503, 102, 103, 831], [491, 18, 107, 887], [399, 110, 111, 1023]]
+    """
     return [mix_single_column(x) for x in grid] 
 
 
@@ -95,7 +110,7 @@ def shift_rows(grid):
 def shift_rows_inverse(grid):
     """ Reverse the shift rows step """
     # shift 2nd row
-    grid[1][1], grid[1][2], grid[1][3], grid[1][0]= \
+    grid[1][1], grid[1][2], grid[1][3], grid[1][0] = \
         grid[1][0], grid[1][1], grid[1][2], grid[1][3]
 
     # shift 3rd row
@@ -110,11 +125,4 @@ def shift_rows_inverse(grid):
 
 
 if __name__ == "__main__":
-    grid = to_grid(b"abcdefghijklmnop")
-    print(grid)
-    print()
-    grid = shift_rows(grid)
-    print(grid)
-    print()
-    print(shift_rows_inverse(grid))
     doctest.testmod(verbose=True)
