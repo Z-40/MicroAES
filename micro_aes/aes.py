@@ -47,21 +47,23 @@ def substitute_inverse(grid):
 
 
 def mix_single_column(column):
-    column[0] = TABLE2[column[0]] ^ TABLE3[column[1]] ^ column[2] ^ column[3]
-    column[1] = column[0] ^ TABLE2[column[1]] ^ TABLE3[column[2]] ^ column[3]
-    column[2] = column[0] ^ column[1] ^ TABLE2[column[2]] ^ TABLE3[column[3]]
-    column[3] = TABLE3[column[0]] ^ column[1] ^ column[2] ^ TABLE2[column[3]]
+    c = [b for b in column]
+    column[0] = TABLE2[c[0]] ^ TABLE3[c[1]] ^ c[2] ^ c[3]
+    column[1] = c[0] ^ TABLE2[c[1]] ^ TABLE3[c[2]] ^ c[3]
+    column[2] = c[0] ^ c[1] ^ TABLE2[c[2]] ^ TABLE3[c[3]]
+    column[3] = TABLE3[c[0]] ^ c[1] ^ c[2] ^ TABLE2[c[3]]
 
 
 def inverse_mix_single_column(column):
-    column[0] = TABLE14[column[0]] ^ TABLE11[column[1]] ^ \
-        TABLE13[column[2]] ^ TABLE9[column[3]]
-    column[1] = TABLE9[column[0]] ^ TABLE14[column[1]] ^ \
-        TABLE11[column[2]] ^ TABLE13[column[3]]
-    column[2] = TABLE13[column[0]] ^ TABLE9[column[1]] ^ \
-        TABLE14[column[2]] ^ TABLE11[column[3]]
-    column[3] = TABLE11[column[0]] ^ TABLE13[column[1]] ^ \
-        TABLE9[column[2]] ^ TABLE14[column[3]]
+    c = [b for b in column]
+    column[0] = TABLE14[c[0]] ^ TABLE11[c[1]] ^ \
+        TABLE13[c[2]] ^ TABLE9[c[3]]
+    column[1] = TABLE9[c[0]] ^ TABLE14[c[1]] ^ \
+        TABLE11[c[2]] ^ TABLE13[c[3]]
+    column[2] = TABLE13[c[0]] ^ TABLE9[c[1]] ^ \
+        TABLE14[c[2]] ^ TABLE11[c[3]]
+    column[3] = TABLE11[c[0]] ^ TABLE13[c[1]] ^ \
+        TABLE9[c[2]] ^ TABLE14[c[3]]
 
 
 def mix_columns_inverse(grid):
