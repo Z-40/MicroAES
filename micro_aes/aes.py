@@ -10,12 +10,10 @@ from constants import INVERSE_SUBSTITUTION_BOX
 
 
 def xor_bytes(a, b):
-    """xor 2 byte strings"""
     return bytes([x ^ y for x, y in zip(a, b)])
 
 
 def to_grid(text, length):
-    """Convert ``text`` into a 4x4 grid"""
     grid = []
     for index in range(0, length, 4):
         grid.append(list(text[index:index+4]))
@@ -24,12 +22,10 @@ def to_grid(text, length):
 
 
 def from_grid(grid):
-    """Convert ``grid`` into a string of 16 characters"""
     return bytes(sum(grid, []))
 
 
 def substitute(grid):
-    """Substitute each byte of the ``grid`` using the s-box"""
     for x in range(4):
         for y in range(4):
             grid[x][y] = SUBSTITUTION_BOX[grid[x][y]]
@@ -38,7 +34,6 @@ def substitute(grid):
 
 
 def substitute_inverse(grid):
-    """Get the original bytes of the ``grid`` using inverse s-box"""
     for x in range(4):
         for y in range(4):
             grid[x][y] = INVERSE_SUBSTITUTION_BOX[grid[x][y]]
@@ -56,30 +51,23 @@ def mix_single_column(column):
 
 def inverse_mix_single_column(column):
     c = [b for b in column]
-    column[0] = TABLE14[c[0]] ^ TABLE11[c[1]] ^ \
-        TABLE13[c[2]] ^ TABLE9[c[3]]
-    column[1] = TABLE9[c[0]] ^ TABLE14[c[1]] ^ \
-        TABLE11[c[2]] ^ TABLE13[c[3]]
-    column[2] = TABLE13[c[0]] ^ TABLE9[c[1]] ^ \
-        TABLE14[c[2]] ^ TABLE11[c[3]]
-    column[3] = TABLE11[c[0]] ^ TABLE13[c[1]] ^ \
-        TABLE9[c[2]] ^ TABLE14[c[3]]
+    column[0] = TABLE14[c[0]] ^ TABLE11[c[1]] ^ TABLE13[c[2]] ^ TABLE9[c[3]]
+    column[1] = TABLE9[c[0]] ^ TABLE14[c[1]] ^ TABLE11[c[2]] ^ TABLE13[c[3]]
+    column[2] = TABLE13[c[0]] ^ TABLE9[c[1]] ^ TABLE14[c[2]] ^ TABLE11[c[3]]
+    column[3] = TABLE11[c[0]] ^ TABLE13[c[1]] ^ TABLE9[c[2]] ^ TABLE14[c[3]]
 
 
 def mix_columns_inverse(grid):
-    """Mix all columns in the ``grid``"""
     for x in grid:
         inverse_mix_single_column(x)
 
 
 def mix_columns(grid):
-    """Mix all columns in the ``grid``"""
     for x in grid:
         mix_single_column(x) 
 
 
 def shift_rows(grid):
-    """ Shift rows of the ``grid`` """
     # shift 2nd row
     grid[1][0], grid[1][1], grid[1][2], grid[1][3] = \
         grid[1][1], grid[1][2], grid[1][3], grid[1][0]
@@ -96,7 +84,6 @@ def shift_rows(grid):
 
 
 def shift_rows_inverse(grid):
-    """ Reverse the shift rows step """
     # shift 2nd row
     grid[1][1], grid[1][2], grid[1][3], grid[1][0] = \
         grid[1][0], grid[1][1], grid[1][2], grid[1][3]
