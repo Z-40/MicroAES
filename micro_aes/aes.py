@@ -1,9 +1,9 @@
 from constants import TABLE2
-from constants import TABLE3
-from constants import TABLE9
-from constants import TABLE11
-from constants import TABLE13
-from constants import TABLE14
+from constants import GF03
+from constants import GF09
+from constants import GF11
+from constants import GF13
+from constants import GF14
 from constants import ROUND_CONSTANT
 from constants import SUBSTITUTION_BOX
 from constants import INVERSE_SUBSTITUTION_BOX
@@ -43,18 +43,18 @@ def substitute_inverse(grid):
 
 def mix_single_column(column):
     c = [b for b in column]
-    column[0] = TABLE2[c[0]] ^ TABLE3[c[1]] ^ c[2] ^ c[3]
-    column[1] = c[0] ^ TABLE2[c[1]] ^ TABLE3[c[2]] ^ c[3]
-    column[2] = c[0] ^ c[1] ^ TABLE2[c[2]] ^ TABLE3[c[3]]
-    column[3] = TABLE3[c[0]] ^ c[1] ^ c[2] ^ TABLE2[c[3]]
+    column[0] = GF02[c[0]] ^ GF03[c[1]] ^ c[2] ^ c[3]
+    column[1] = c[0] ^ GF02[c[1]] ^ GF03[c[2]] ^ c[3]
+    column[2] = c[0] ^ c[1] ^ GF02[c[2]] ^ GF03[c[3]]
+    column[3] = GF03[c[0]] ^ c[1] ^ c[2] ^ GF02[c[3]]
 
 
 def inverse_mix_single_column(column):
     c = [b for b in column]
-    column[0] = TABLE14[c[0]] ^ TABLE11[c[1]] ^ TABLE13[c[2]] ^ TABLE9[c[3]]
-    column[1] = TABLE9[c[0]] ^ TABLE14[c[1]] ^ TABLE11[c[2]] ^ TABLE13[c[3]]
-    column[2] = TABLE13[c[0]] ^ TABLE9[c[1]] ^ TABLE14[c[2]] ^ TABLE11[c[3]]
-    column[3] = TABLE11[c[0]] ^ TABLE13[c[1]] ^ TABLE9[c[2]] ^ TABLE14[c[3]]
+    column[0] = GF14[c[0]] ^ GF11[c[1]] ^ GF13[c[2]] ^ GF09[c[3]]
+    column[1] = GF09[c[0]] ^ GF14[c[1]] ^ GF11[c[2]] ^ GF13[c[3]]
+    column[2] = GF13[c[0]] ^ GF09[c[1]] ^ GF14[c[2]] ^ GF11[c[3]]
+    column[3] = GF11[c[0]] ^ GF13[c[1]] ^ GF09[c[2]] ^ GF14[c[3]]
 
 
 def mix_columns_inverse(grid):
@@ -99,20 +99,24 @@ def shift_rows_inverse(grid):
     return grid
 
 
-def expand_key(master_key, rounds):
-    def xor_round(x, r): 
+def xor_round(x, r): 
         x[0] ^= ROUND_CONSTANT[r]
         return x
         
-    def xor_word(a, b): 
-        return [y ^ b[x] for x, y in enumerate(a)]
 
-    def rotate_word(x): 
-        x.append(x.pop(0))
+def xor_word(a, b): 
+    return [y ^ b[x] for x, y in enumerate(a)]
 
-    def substitute_word(x): 
-        return [SUBSTITUTION_BOX[y] for y in x]
 
+def rotate_word(x): 
+    x.append(x.pop(0))
+
+
+def substitute_word(x): 
+    return [SUBSTITUTION_BOX[y] for y in x]
+
+
+def expand_key(master_key, rounds):
     words = [word for word in master_key]
     for r in range(1, rounds + 1):
         rotate_word(words[len(words) - 1])
@@ -128,3 +132,9 @@ def expand_key(master_key, rounds):
         keys.append(list(words[index:index+4]))
 
     return [from_grid(key) for key in keys]
+
+m = expand_key(to_grid(b"1234567890123456", 16), 10)
+
+for x in m:
+    print(x)
+    print(len(x))
