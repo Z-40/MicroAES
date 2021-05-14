@@ -1,4 +1,4 @@
-from constants import TABLE2
+from constants import GF02
 from constants import GF03
 from constants import GF09
 from constants import GF11
@@ -48,6 +48,8 @@ def mix_single_column(column):
     column[2] = c[0] ^ c[1] ^ GF02[c[2]] ^ GF03[c[3]]
     column[3] = GF03[c[0]] ^ c[1] ^ c[2] ^ GF02[c[3]]
 
+    del c, column
+
 
 def inverse_mix_single_column(column):
     c = [b for b in column]
@@ -55,6 +57,8 @@ def inverse_mix_single_column(column):
     column[1] = GF09[c[0]] ^ GF14[c[1]] ^ GF11[c[2]] ^ GF13[c[3]]
     column[2] = GF13[c[0]] ^ GF09[c[1]] ^ GF14[c[2]] ^ GF11[c[3]]
     column[3] = GF11[c[0]] ^ GF13[c[1]] ^ GF09[c[2]] ^ GF14[c[3]]
+
+    del c, column
 
 
 def mix_columns_inverse(grid):
@@ -132,9 +136,3 @@ def expand_key(master_key, rounds):
         keys.append(list(words[index:index+4]))
 
     return [from_grid(key) for key in keys]
-
-m = expand_key(to_grid(b"1234567890123456", 16), 10)
-
-for x in m:
-    print(x)
-    print(len(x))
