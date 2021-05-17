@@ -133,9 +133,12 @@ def expand_key(master_key, rounds):
     return [from_matrix(k) for k in keys]
 
 
-def add_round_key(state, keys):
-    pass
+def add_round_key(state, key):
+    key_matrix = to_matrix(key)
+    for x, y in enumerate(state):
+        for a, b in enumerate(y):
+            state[x][a] = key_matrix[x][a] ^ b
 
 
 if __name__ == "__main__":
-    import os
+    pass
