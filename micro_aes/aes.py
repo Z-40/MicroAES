@@ -13,32 +13,28 @@ def xor_bytes(a, b):
     return bytes([x ^ y for x, y in zip(a, b)])
 
 
-def to_grid(text, length):
-    grid = []
-    for index in range(0, length, 4):
-        grid.append(list(text[index:index+4]))
-
-    return grid
+def to_matrix(text):
+    return [list(text[index:index+4]) for index in range(0, len(text), 4)]
 
 
-def from_grid(grid):
-    return bytes(sum(grid, []))
+def from_matrix(state):
+    return bytes(sum(state, []))
 
 
-def substitute(grid):
+def substitute(state):
     for x in range(4):
         for y in range(4):
-            grid[x][y] = SUBSTITUTION_BOX[grid[x][y]]
+            state[x][y] = SUBSTITUTION_BOX[state[x][y]]
 
-    return grid
+    return state
 
 
-def substitute_inverse(grid):
+def substitute_inverse(state):
     for x in range(4):
         for y in range(4):
-            grid[x][y] = INVERSE_SUBSTITUTION_BOX[grid[x][y]]
+            state[x][y] = INVERSE_SUBSTITUTION_BOX[state[x][y]]
 
-    return grid
+    return state
 
 
 def mix_single_column(column):
@@ -48,8 +44,6 @@ def mix_single_column(column):
     column[2] = c[0] ^ c[1] ^ GF02[c[2]] ^ GF03[c[3]]
     column[3] = GF03[c[0]] ^ c[1] ^ c[2] ^ GF02[c[3]]
 
-    del c, column
-
 
 def inverse_mix_single_column(column):
     c = [b for b in column]
@@ -58,69 +52,70 @@ def inverse_mix_single_column(column):
     column[2] = GF13[c[0]] ^ GF09[c[1]] ^ GF14[c[2]] ^ GF11[c[3]]
     column[3] = GF11[c[0]] ^ GF13[c[1]] ^ GF09[c[2]] ^ GF14[c[3]]
 
-    del c, column
 
-
-def mix_columns_inverse(grid):
-    for x in grid:
+def mix_columns_inverse(state):
+    for x in state:
         inverse_mix_single_column(x)
 
 
-def mix_columns(grid):
-    for x in grid:
-        mix_single_column(x) 
+def mix_columns(state):
+    for x in state:
+        mix_single_column(x)
 
 
-def shift_rows(grid):
+def shift_rows(state):
     # shift 2nd row
-    grid[1][0], grid[1][1], grid[1][2], grid[1][3] = \
-        grid[1][1], grid[1][2], grid[1][3], grid[1][0]
+    state[1][0], state[1][1], state[1][2], state[1][3] = \
+        state[1][1], state[1][2], state[1][3], state[1][0]
 
     # shift 3rd row
-    grid[2][0], grid[2][1], grid[2][2], grid[2][3] = \
-        grid[2][2], grid[2][3], grid[2][0], grid[2][1]
+    state[2][0], state[2][1], state[2][2], state[2][3] = \
+        state[2][2], state[2][3], state[2][0], state[2][1]
 
     # shift 4th row
-    grid[3][0], grid[3][1], grid[3][2], grid[3][3] = \
-        grid[3][3], grid[3][0], grid[3][1], grid[3][2]
+    state[3][0], state[3][1], state[3][2], state[3][3] = \
+        state[3][3], state[3][0], state[3][1], state[3][2]
 
-    return grid
+    return state
 
 
-def shift_rows_inverse(grid):
+def shift_rows_inverse(state):
     # shift 2nd row
-    grid[1][1], grid[1][2], grid[1][3], grid[1][0] = \
-        grid[1][0], grid[1][1], grid[1][2], grid[1][3]
+    state[1][1], state[1][2], state[1][3], state[1][0] = \
+        state[1][0], state[1][1], state[1][2], state[1][3]
 
     # shift 3rd row
-    grid[2][2], grid[2][3], grid[2][0], grid[2][1] = \
-        grid[2][0], grid[2][1], grid[2][2], grid[2][3]
+    state[2][2], state[2][3], state[2][0], state[2][1] = \
+        state[2][0], state[2][1], state[2][2], state[2][3]
 
     # shift 4th row
-    grid[3][3], grid[3][0], grid[3][1], grid[3][2] = \
-        grid[3][0], grid[3][1], grid[3][2], grid[3][3]
+    state[3][3], state[3][0], state[3][1], state[3][2] = \
+        state[3][0], state[3][1], state[3][2], state[3][3]
 
-    return grid
+    return state
 
 
-def xor_round(x, r): 
-        x[0] ^= ROUND_CONSTANT[r]
-        return x
-        
+def xor_round(word, round):
+    word[0] ^= ROUND_CONSTANT[round]
+    return word
 
-def xor_word(a, b): 
+
+def xor_word(a, b):
     return [y ^ b[x] for x, y in enumerate(a)]
 
 
-def rotate_word(x): 
-    x.append(x.pop(0))
+def rotate_word(word):
+    word.append(word.pop(0))
 
 
-def substitute_word(x): 
-    return [SUBSTITUTION_BOX[y] for y in x]
+def substitute_word(word):
+    return [SUBSTITUTION_BOX[y] for y in word]
 
 
 def expand_key(master_key, rounds):
+    master_key = to_matrix(master_key)
+    rounds += 1
+
     words = [word for word in master_key]
     for r in range(1, rounds + 1):
         rotate_word(words[len(words) - 1])
@@ -135,4 +130,12 @@ def expand_key(master_key, rounds):
     for index in range(0, len(words), 4):
         keys.append(list(words[index:index+4]))
 
-    return [from_grid(key) for key in keys]
+    return [from_matrix(k) for k in keys]
+
+
+def add_round_key(state, keys):
+    pass
+
+
+if __name__ == "__main__":
+    import os
