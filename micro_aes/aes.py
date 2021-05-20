@@ -76,8 +76,6 @@ def shift_rows(state):
     state[3][0], state[3][1], state[3][2], state[3][3] = \
         state[3][3], state[3][0], state[3][1], state[3][2]
 
-    return state
-
 
 def shift_rows_inverse(state):
     # shift 2nd row
@@ -92,32 +90,26 @@ def shift_rows_inverse(state):
     state[3][3], state[3][0], state[3][1], state[3][2] = \
         state[3][0], state[3][1], state[3][2], state[3][3]
 
-    return state
 
+def expand_key(master_key):
+    def xor_round(word, round_number):
+        word[0] ^= ROUND_CONSTANT[round_number]
+        return word
 
-def xor_round(word, round):
-    word[0] ^= ROUND_CONSTANT[round]
-    return word
+    def xor_word(a, b):
+        return [y ^ b[x] for x, y in enumerate(a)]
 
+    def rotate_word(word):
+        word.append(word.pop(0))
 
-def xor_word(a, b):
-    return [y ^ b[x] for x, y in enumerate(a)]
+    def substitute_word(word):
+        return [SUBSTITUTION_BOX[y] for y in word]
 
+    key_rounds = {16: 10, 24: 12, 32: 14}
+    rounds = key_rounds[len(master_key)]
+    words = [word for word in to_matrix(master_key)]
 
-def rotate_word(word):
-    word.append(word.pop(0))
-
-
-def substitute_word(word):
-    return [SUBSTITUTION_BOX[y] for y in word]
-
-
-def expand_key(master_key, rounds):
-    master_key = to_matrix(master_key)
-    rounds += 1
-
-    words = [word for word in master_key]
-    for r in range(1, rounds + 1):
+    for r in range(1, rounds + 2):
         rotate_word(words[len(words) - 1])
         words.append(
             xor_word(words[-4], xor_round(substitute_word(words[len(words) - 1]), r))
@@ -130,15 +122,55 @@ def expand_key(master_key, rounds):
     for index in range(0, len(words), 4):
         keys.append(list(words[index:index+4]))
 
-    return [from_matrix(k) for k in keys]
+    return [from_matrix(k) for k in keys[:-2]]
 
 
-def add_round_key(state, key):
-    key_matrix = to_matrix(key)
-    for x, y in enumerate(state):
-        for a, b in enumerate(y):
-            state[x][a] = key_matrix[x][a] ^ b
+def add_round_key(state, master_key):
+    key_matrix = to_matrix(master_key)
+    for x in range(4):
+        for y in range(4):
+            state[x][y] ^= key_matrix[x][y]
 
+
+def encrypt_block(plain_text, master_key):
+    plain_text = to_matrix(plain_text)
+    round_keys = expand_key(master_key)
+    rounds = len(round_keys) - 1
+
+    add_round_key(plain_text, round_keys[0])
+
+    for i in range(1, rounds):
+        substitute(plain_text)
+        shift_rows(plain_text)
+        mix_columns(plain_text)
+        add_round_key(plain_text, round_keys[i])
+
+    substitute(plain_text)
+    shift_rows(plain_text)
+    add_round_key(plain_text, round_keys[-1])
+
+    return from_matrix(plain_text)
+        
+
+def decrypt_block(cipher_text, master_key):
+    cipher_text = to_matrix(cipher_text)
+    round_keys = expand_key(master_key)
+    rounds = len(round_keys) - 1
+
+    add_round_key(cipher_text, round_keys[-1])
+    shift_rows_inverse(cipher_text)
+    substitute_inverse(cipher_text)
+
+    for i in range(rounds - 1, 0, -1):
+        add_round_key(cipher_text, round_keys[i])
+        mix_columns_inverse(cipher_text)
+        shift_rows_inverse(cipher_text)
+        substitute_inverse(cipher_text)
+
+    add_round_key(cipher_text, round_keys[0])
+
+    return from_matrix(cipher_text)
+        
 
 if __name__ == "__main__":
     pass
