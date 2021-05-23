@@ -24,7 +24,7 @@ def from_matrix(state):
 class AES:
     @staticmethod
     def add_padding(plain_text):
-        pad_length = 16 - len(plain_text)
+        pad_length = 16 - (len(plain_text) % 16)
         padding = bytes([pad_length] * pad_length)
 
         return plain_text + padding
@@ -175,6 +175,18 @@ class AES:
         self.add_round_key(0)
 
         return from_matrix(self.state)
+
+    def encrypt_ecb(self, plain_text):
+        plain_text = self.add_padding(plain_text)
+        blocks = self.split_blocks(plain_text)
+
+        return b"".join([self.encrypt_block(block) for block in blocks])
+
+    def decrypt_ecb(self, cipher_text):
+        blocks = self.split_blocks(cipher_text)
+        decrypted = b"".join([self.decrypt_block(block) for block in blocks])
+
+        return self.remove_padding(decrypted)
 
 
 if __name__ == "__main__":
