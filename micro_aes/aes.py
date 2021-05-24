@@ -9,36 +9,47 @@ from constants import SUBSTITUTION_BOX
 from constants import INVERSE_SUBSTITUTION_BOX
 
 
-def xor_bytes(a, b):
+def xor_bytes(a: bytes, b: bytes) -> bytes:
+    """XOR two byte strings"""
     return bytes([x ^ y for x, y in zip(a, b)])
 
 
-def to_matrix(text):
+def to_matrix(text: bytes) -> list:
+    """Convert 16-byte byte string into 4x4 matrix"""
     return [list(text[index:index+4]) for index in range(0, len(text), 4)]
 
 
-def from_matrix(state):
+def from_matrix(state: list) -> bytes:
+    """Convert 4x4 matrix into 16-byte byte string"""
     return bytes(sum(state, []))
+
+
+class BadKeyLength(BaseException):
+    """Raised when the length of the key is not 128, 192, 256 bits"""
 
 
 class AES:
     @staticmethod
-    def add_padding(plain_text):
+    def add_padding(plain_text: bytes) -> bytes:
+        """Add PKCS#7 padding to a byte string"""
         pad_length = 16 - (len(plain_text) % 16)
         padding = bytes([pad_length] * pad_length)
 
         return plain_text + padding
 
     @staticmethod
-    def remove_padding(plain_text):
+    def remove_padding(plain_text: bytes) -> bytes:
+        """Remove PKCS#7 padding from byte string"""
         return plain_text[:-plain_text[-1]]
 
     @staticmethod
-    def split_blocks(blocks):
+    def split_blocks(blocks: bytes) -> list:
+        """Split a byte string into 16-byte blocks"""
         return [blocks[x:x + 16] for x in range(0, len(blocks), 16)]
 
     @staticmethod
-    def mix_single_column(column):
+    def mix_single_column(column: list) -> None:
+        """Mix a given column from AES matrix"""
         c = [b for b in column]
         column[0] = GF02[c[0]] ^ GF03[c[1]] ^ c[2] ^ c[3]
         column[1] = c[0] ^ GF02[c[1]] ^ GF03[c[2]] ^ c[3]
@@ -46,39 +57,62 @@ class AES:
         column[3] = GF03[c[0]] ^ c[1] ^ c[2] ^ GF02[c[3]]
 
     @staticmethod
-    def inverse_mix_single_column(column):
+    def inverse_mix_single_column(column: list) -> None:
+        """Un-Mix a given column from AES matrix"""
         c = [b for b in column]
         column[0] = GF14[c[0]] ^ GF11[c[1]] ^ GF13[c[2]] ^ GF09[c[3]]
         column[1] = GF09[c[0]] ^ GF14[c[1]] ^ GF11[c[2]] ^ GF13[c[3]]
         column[2] = GF13[c[0]] ^ GF09[c[1]] ^ GF14[c[2]] ^ GF11[c[3]]
         column[3] = GF11[c[0]] ^ GF13[c[1]] ^ GF09[c[2]] ^ GF14[c[3]]
 
-    def __init__(self, master_key: bytes):
+    def __init__(self, master_key: bytes) -> None:
+        """AES class for encrypting and decrypting
+        Available Modes:
+            ECB (Electronic Codebook)
+
+        NOTE: Will be adding CBC, CTR, OFB and CFB modes soon!
+            
+        :param master_key: 128, 192 or 256 bit long byte string
+        :returnType: NoneType
+        :return: None
+        :raises: BadKeyLength when key entered is not of correct lenght,
+            i.e, 128, 192 or 156 bits
+        """
         key_variants = {16: 10, 24: 12, 32: 14}
+        if len(master_key) not in key_variants:
+            raise BadKeyLength(
+                "Key of length {} is not supported".format(len(master_key))
+            )
+
         self.master_key = master_key
         self.rounds = key_variants[len(self.master_key)]
         self.round_keys = self.expand_key()
         self.state = []
 
-    def substitute(self):
+    def substitute(self) -> None:
+        """Perform the AES Substitute Byte step"""
         for x in range(4):
             for y in range(4):
                 self.state[x][y] = SUBSTITUTION_BOX[self.state[x][y]]
 
-    def substitute_inverse(self):
+    def substitute_inverse(self) -> None:
+        """Reverse AES Substitute Byte step"""
         for x in range(4):
             for y in range(4):
                 self.state[x][y] = INVERSE_SUBSTITUTION_BOX[self.state[x][y]]
 
-    def mix_columns_inverse(self):
-        for x in self.state:
-            self.inverse_mix_single_column(x)
-
-    def mix_columns(self):
+    def mix_columns(self) -> None:
+        """Perform AES Mix Columns step"""
         for x in self.state:
             self.mix_single_column(x)
 
-    def shift_rows(self):
+    def mix_columns_inverse(self) -> None:
+        """Reverse AES Mix Columns step"""
+        for x in self.state:
+            self.inverse_mix_single_column(x)
+
+    def shift_rows(self) -> None:
+        """Perform AES Shift Rows step"""
         # shift 2nd row
         self.state[1][0], self.state[1][1], self.state[1][2], self.state[1][3] = \
             self.state[1][1], self.state[1][2], self.state[1][3], self.state[1][0]
@@ -91,7 +125,8 @@ class AES:
         self.state[3][0], self.state[3][1], self.state[3][2], self.state[3][3] = \
             self.state[3][3], self.state[3][0], self.state[3][1], self.state[3][2]
 
-    def shift_rows_inverse(self):
+    def shift_rows_inverse(self) -> None:
+        """Reverse AES Shift Rows step"""
         # shift 2nd row
         self.state[1][1], self.state[1][2], self.state[1][3], self.state[1][0] = \
             self.state[1][0], self.state[1][1], self.state[1][2], self.state[1][3]
@@ -104,7 +139,12 @@ class AES:
         self.state[3][3], self.state[3][0], self.state[3][1], self.state[3][2] = \
             self.state[3][0], self.state[3][1], self.state[3][2], self.state[3][3]
 
-    def expand_key(self):
+    def expand_key(self) -> None:
+        """Expand 128, 192 or 256 bit keys and return list of round keys
+        Number of round keys depend on key size:
+            128-bit => 11 round keys
+            192-bit => 13 round keys
+            256-bit => 15 round keys"""
         def xor_round(word, round_number):
             word[0] ^= ROUND_CONSTANT[round_number]
             return word
@@ -137,13 +177,15 @@ class AES:
 
         return [from_matrix(k) for k in keys[:-2]]
 
-    def add_round_key(self, key_index):
+    def add_round_key(self, key_index: int) -> None:
+        """Perform AES Add Round Key step"""
         key_matrix = to_matrix(self.round_keys[key_index])
         for x in range(4):
             for y in range(4):
                 self.state[x][y] ^= key_matrix[x][y]
 
-    def encrypt_block(self, plain_text):
+    def encrypt_block(self, plain_text: bytes) -> bytes:
+        """Encrypt 16-byte block using AES"""
         self.state = to_matrix(plain_text)
         self.add_round_key(0)
 
@@ -159,7 +201,8 @@ class AES:
 
         return from_matrix(self.state)
 
-    def decrypt_block(self, cipher_text):
+    def decrypt_block(self, cipher_text: bytes) -> bytes:
+        """Decrypt 16-byte block using AES"""
         self.state = to_matrix(cipher_text)
 
         self.add_round_key(-1)
@@ -176,13 +219,16 @@ class AES:
 
         return from_matrix(self.state)
 
-    def encrypt_ecb(self, plain_text):
+    def encrypt_ecb(self, plain_text: bytes) -> bytes:
+        """Encrypt using ECB (Electronic Codebook) mode"""
         plain_text = self.add_padding(plain_text)
         blocks = self.split_blocks(plain_text)
 
         return b"".join([self.encrypt_block(block) for block in blocks])
 
-    def decrypt_ecb(self, cipher_text):
+    def decrypt_ecb(self, cipher_text: bytes) -> bytes:
+        """Decrypt using ECB (Electronic Codebook) mode
+        `cipher_text` must be created using ECB mode using AES"""
         blocks = self.split_blocks(cipher_text)
         decrypted = b"".join([self.decrypt_block(block) for block in blocks])
 
