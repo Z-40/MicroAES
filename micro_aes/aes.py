@@ -75,7 +75,7 @@ class AES:
         :param master_key: 128, 192 or 256 bit long byte string
         :returnType: NoneType
         :return: None
-        :raises: BadKeyLength when key entered is not of correct lenght,
+        :raises: BadKeyLength when key entered is not of correct length,
             i.e, 128, 192 or 156 bits
         """
         key_variants = {16: 10, 24: 12, 32: 14}
@@ -139,7 +139,7 @@ class AES:
         self.state[3][3], self.state[3][0], self.state[3][1], self.state[3][2] = \
             self.state[3][0], self.state[3][1], self.state[3][2], self.state[3][3]
 
-    def expand_key(self) -> None:
+    def expand_key(self) -> bytes:
         """Expand 128, 192 or 256 bit keys and return list of round keys
         Number of round keys depend on key size:
             128-bit => 11 round keys
@@ -233,6 +233,39 @@ class AES:
         decrypted = b"".join([self.decrypt_block(block) for block in blocks])
 
         return self.remove_padding(decrypted)
+
+    def encrypt_cbc(self, plain_text: bytes, iv: bytes) -> bytes:
+        """Encrypt using CBC (Cipher Block Chaining) mode"""
+        assert len(iv) == 16
+        plain_text = self.add_padding(plain_text)
+        blocks = self.split_blocks(plain_text)
+        encrypted_blocks = []
+
+        encrypted_blocks.append(self.encrypt_block(xor_bytes(blocks[0], iv)))
+        for block in blocks[1:]:
+            encrypted_blocks.append(
+                self.encrypt_block(
+                    xor_bytes(encrypted_blocks[blocks.index(block) - 1], block)
+                )
+            )
+
+        return b"".join(encrypted_blocks)
+
+    def decrypt_cbc(self, cipher_text: bytes, iv: bytes) -> bytes:
+        """Encrypt using CBC (Cipher Block Chaining) mode"""
+        assert len(iv) == 16
+        blocks = self.split_blocks(cipher_text)
+        decrypted_blocks = []
+
+        decrypted_blocks.append(xor_bytes(self.decrypt_block(blocks[0]), iv))
+        for block in blocks[1:]:
+            decrypted_blocks.append(
+                xor_bytes(
+                    blocks[blocks.index(block) - 1], self.decrypt_block(block)
+                )
+            )
+
+        return self.remove_padding(b"".join(decrypted_blocks))
 
 
 if __name__ == "__main__":
