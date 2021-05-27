@@ -227,8 +227,7 @@ class AES:
         return b"".join([self.encrypt_block(block) for block in blocks])
 
     def decrypt_ecb(self, cipher_text: bytes) -> bytes:
-        """Decrypt using ECB (Electronic Codebook) mode
-        `cipher_text` must be created using ECB mode using AES"""
+        """Decrypt cipher text created using using ECB (Electronic Codebook) mode"""
         blocks = self.split_blocks(cipher_text)
         decrypted = b"".join([self.decrypt_block(block) for block in blocks])
 
@@ -252,7 +251,7 @@ class AES:
         return b"".join(encrypted_blocks)
 
     def decrypt_cbc(self, cipher_text: bytes, iv: bytes) -> bytes:
-        """Encrypt using CBC (Cipher Block Chaining) mode"""
+        """Decrypt cipher text created using CBC (Cipher Block Chaining) mode"""
         assert len(iv) == 16
         blocks = self.split_blocks(cipher_text)
         decrypted_blocks = []
