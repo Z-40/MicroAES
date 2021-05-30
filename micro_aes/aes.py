@@ -65,13 +65,13 @@ class AES:
         column[2] = GF13[c[0]] ^ GF09[c[1]] ^ GF14[c[2]] ^ GF11[c[3]]
         column[3] = GF11[c[0]] ^ GF13[c[1]] ^ GF09[c[2]] ^ GF14[c[3]]
 
-    def __init__(self, master_key: bytes) -> None:
+    def __init__(self, master_key: bytes, iv: bytes) -> None:
         """AES class for encrypting and decrypting
         Available Modes:
             ECB (Electronic Codebook)
 
         NOTE: Will be adding CBC, CTR, OFB and CFB modes soon!
-            
+
         :param master_key: 128, 192 or 256 bit long byte string
         :returnType: NoneType
         :return: None
@@ -84,10 +84,14 @@ class AES:
                 "Key of length {} is not supported".format(len(master_key))
             )
 
+        # make sure the initialisation vector is of the correct length
+        assert len(iv) == 16
+
         self.master_key = master_key
-        self.rounds = key_variants[len(self.master_key)]
         self.round_keys = self.expand_key()
+        self.rounds = key_variants[len(self.master_key)]
         self.state = []
+        self.iv = iv
 
     def substitute(self) -> None:
         """Perform the AES Substitute Byte step"""
@@ -233,14 +237,13 @@ class AES:
 
         return self.remove_padding(decrypted)
 
-    def encrypt_cbc(self, plain_text: bytes, iv: bytes) -> bytes:
+    def encrypt_cbc(self, plain_text: bytes) -> bytes:
         """Encrypt using CBC (Cipher Block Chaining) mode"""
         assert len(iv) == 16
         plain_text = self.add_padding(plain_text)
         blocks = self.split_blocks(plain_text)
-        encrypted_blocks = []
 
-        encrypted_blocks.append(self.encrypt_block(xor_bytes(blocks[0], iv)))
+        encrypted_blocks = [self.encrypt_block(xor_bytes(blocks[0], self.iv))]
         for block in blocks[1:]:
             encrypted_blocks.append(
                 self.encrypt_block(
@@ -250,13 +253,10 @@ class AES:
 
         return b"".join(encrypted_blocks)
 
-    def decrypt_cbc(self, cipher_text: bytes, iv: bytes) -> bytes:
+    def decrypt_cbc(self, cipher_text: bytes) -> bytes:
         """Decrypt cipher text created using CBC (Cipher Block Chaining) mode"""
-        assert len(iv) == 16
         blocks = self.split_blocks(cipher_text)
-        decrypted_blocks = []
-
-        decrypted_blocks.append(xor_bytes(self.decrypt_block(blocks[0]), iv))
+        decrypted_blocks = [xor_bytes(self.decrypt_block(blocks[0]), self.iv)]
         for block in blocks[1:]:
             decrypted_blocks.append(
                 xor_bytes(
@@ -266,6 +266,9 @@ class AES:
 
         return self.remove_padding(b"".join(decrypted_blocks))
 
+    def encrypt_ofb(self, plain_text: bytes):
+        pass
+        
 
 if __name__ == "__main__":
     pass
