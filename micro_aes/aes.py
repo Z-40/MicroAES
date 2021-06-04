@@ -225,9 +225,7 @@ class AES:
 
     def encrypt_ecb(self, plain_text: bytes) -> bytes:
         """Encrypt using ECB (Electronic Codebook) mode"""
-        plain_text = self.add_padding(plain_text)
-        blocks = self.split_blocks(plain_text)
-
+        blocks = self.split_blocks(self.add_padding(plain_text))
         return b"".join([self.encrypt_block(block) for block in blocks])
 
     def decrypt_ecb(self, cipher_text: bytes) -> bytes:
@@ -239,9 +237,7 @@ class AES:
 
     def encrypt_cbc(self, plain_text: bytes) -> bytes:
         """Encrypt using CBC (Cipher Block Chaining) mode"""
-        assert len(iv) == 16
-        plain_text = self.add_padding(plain_text)
-        blocks = self.split_blocks(plain_text)
+        blocks = self.split_blocks(self.add_padding(plain_text))
 
         encrypted_blocks = [self.encrypt_block(xor_bytes(blocks[0], self.iv))]
         for block in blocks[1:]:
@@ -266,9 +262,56 @@ class AES:
 
         return self.remove_padding(b"".join(decrypted_blocks))
 
-    def encrypt_ofb(self, plain_text: bytes):
-        pass
-        
+    def encrypt_ofb(self, plain_text: bytes) -> bytes:
+        """Encrypt using OFB (Output FeedBack) mode"""
+        blocks = self.split_blocks(plain_text)
+
+        # We make a seperate variable for the iv so that self.iv doesen't change
+        iv = self.iv
+
+        encrypted_vectors = []
+        for _ in blocks:
+            iv = self.encrypt_block(iv)
+            encrypted_vectors.append(iv)
+
+        for i in range(len(blocks)):
+            blocks[i] = xor_bytes(blocks[i], encrypted_vectors[i])
+
+        return b"".join(blocks)
+
+    def decrypt_ofb(self, cipher_text: bytes) -> bytes:
+        """Decrypt cipher text created using OFB (Output FeedBack) mode"""
+        blocks = self.split_blocks(cipher_text)
+        iv = self.iv
+
+        encrypted_vectors = []
+        for _ in blocks:
+            iv = self.encrypt_block(iv)
+            encrypted_vectors.append(iv)
+
+        for i in range(len(blocks)):
+            blocks[i] = xor_bytes(blocks[i], encrypted_vectors[i])
+
+        return b"".join(blocks)
+
+    def encrypt_cfb(self, plain_text: bytes):
+        iv = self.iv
+        blocks = self.split_blocks(self.add_padding(plain_text))
+        encrypted_blocks = [xor_bytes(self.encrypt_block(iv), blocks[0])]
+        for block in blocks[:1]:
+            print(len(encrypted_blocks[0]))
+            encrypted_blocks.append(
+                xor_bytes(
+                    self.encrypt_block(block), encrypted_blocks[blocks.index(block)]
+                )
+            )
+
+        return b"".join(encrypted_blocks)
+
 
 if __name__ == "__main__":
-    pass
+    import os
+
+    aes = AES(os.urandom(32), os.urandom(16))
+
+    print(aes.encrypt_cfb(b"123"))
