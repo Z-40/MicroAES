@@ -13,6 +13,12 @@ def xor_bytes(a: bytes, b: bytes) -> bytes:
     """XOR two byte strings"""
     return bytes([x ^ y for x, y in zip(a, b)])
 
+def increment_bytes(text: bytes) -> bytes:
+    return int.to_bytes(
+        int.from_bytes(bytes=text, byteorder="big") + 1,
+        length=len(text),
+        byteorder="big"
+    )
 
 def to_matrix(text: bytes) -> list:
     """Convert 16-byte byte string into 4x4 matrix"""
@@ -43,9 +49,9 @@ class AES:
         return plain_text[:-plain_text[-1]]
 
     @staticmethod
-    def split_blocks(blocks: bytes) -> list:
+    def split_blocks(text: bytes) -> list:
         """Split a byte string into 16-byte blocks"""
-        return [blocks[x:x + 16] for x in range(0, len(blocks), 16)]
+        return [text[x:x+16] for x in range(0, len(text), 16)]
 
     @staticmethod
     def mix_single_column(column: list) -> None:
@@ -224,7 +230,8 @@ class AES:
         return from_matrix(self.state)
 
     def encrypt_ecb(self, plain_text: bytes) -> bytes:
-        """Encrypt using ECB (Electronic Codebook) mode"""
+        """Encrypt using ECB (Electronic Codebook) mode
+        Not suitable for more than one block of cipher text (USE SPARINGLY)"""
         blocks = self.split_blocks(self.add_padding(plain_text))
         return b"".join([self.encrypt_block(block) for block in blocks])
 
@@ -237,81 +244,97 @@ class AES:
 
     def encrypt_cbc(self, plain_text: bytes) -> bytes:
         """Encrypt using CBC (Cipher Block Chaining) mode"""
-        blocks = self.split_blocks(self.add_padding(plain_text))
+        blocks = []
+        previous = self.iv
+        for block in self.split_blocks(self.add_padding(plain_text)):
+            encrypted = self.encrypt_block(xor_bytes(previous, block))
+            blocks.append(encrypted)
+            previous = encrypted
 
-        encrypted_blocks = [self.encrypt_block(xor_bytes(blocks[0], self.iv))]
-        for block in blocks[1:]:
-            encrypted_blocks.append(
-                self.encrypt_block(
-                    xor_bytes(encrypted_blocks[blocks.index(block) - 1], block)
-                )
-            )
-
-        return b"".join(encrypted_blocks)
+        return b"".join(blocks)
 
     def decrypt_cbc(self, cipher_text: bytes) -> bytes:
         """Decrypt cipher text created using CBC (Cipher Block Chaining) mode"""
-        blocks = self.split_blocks(cipher_text)
-        decrypted_blocks = [xor_bytes(self.decrypt_block(blocks[0]), self.iv)]
-        for block in blocks[1:]:
-            decrypted_blocks.append(
-                xor_bytes(
-                    blocks[blocks.index(block) - 1], self.decrypt_block(block)
-                )
-            )
+        blocks = []
+        previous = self.iv
+        for block in self.split_blocks(cipher_text):
+            blocks.append(xor_bytes(previous, self.decrypt_block(block)))
+            previous = block
 
-        return self.remove_padding(b"".join(decrypted_blocks))
+        return self.remove_padding(b"".join(blocks))
 
     def encrypt_ofb(self, plain_text: bytes) -> bytes:
         """Encrypt using OFB (Output FeedBack) mode"""
-        blocks = self.split_blocks(plain_text)
-
-        # We make a seperate variable for the iv so that self.iv doesen't change
-        iv = self.iv
-
-        encrypted_vectors = []
-        for _ in blocks:
-            iv = self.encrypt_block(iv)
-            encrypted_vectors.append(iv)
-
-        for i in range(len(blocks)):
-            blocks[i] = xor_bytes(blocks[i], encrypted_vectors[i])
+        new_iv = self.encrypt_block(self.iv)
+        blocks = []
+        for x in self.split_blocks(plain_text):
+            blocks.append(xor_bytes(x, new_iv))
+            new_iv = self.encrypt_block(new_iv)
 
         return b"".join(blocks)
 
     def decrypt_ofb(self, cipher_text: bytes) -> bytes:
         """Decrypt cipher text created using OFB (Output FeedBack) mode"""
-        blocks = self.split_blocks(cipher_text)
-        iv = self.iv
-
-        encrypted_vectors = []
-        for _ in blocks:
-            iv = self.encrypt_block(iv)
-            encrypted_vectors.append(iv)
-
-        for i in range(len(blocks)):
-            blocks[i] = xor_bytes(blocks[i], encrypted_vectors[i])
+        new_iv = self.encrypt_block(self.iv)
+        blocks = []
+        for x in self.split_blocks(cipher_text):
+            blocks.append(xor_bytes(x, new_iv))
+            new_iv = self.encrypt_block(new_iv)
 
         return b"".join(blocks)
 
-    def encrypt_cfb(self, plain_text: bytes):
-        iv = self.iv
-        blocks = self.split_blocks(self.add_padding(plain_text))
-        encrypted_blocks = [xor_bytes(self.encrypt_block(iv), blocks[0])]
-        for block in blocks[:1]:
-            print(len(encrypted_blocks[0]))
-            encrypted_blocks.append(
-                xor_bytes(
-                    self.encrypt_block(block), encrypted_blocks[blocks.index(block)]
-                )
-            )
+    def encrypt_cfb(self, plain_text: bytes) -> bytes:
+        """Encrypt using CFB (Cipher FeedBack) mode"""
+        blocks = []
+        previous = self.iv
+        for x in self.split_blocks(plain_text):
+            encrypted = xor_bytes(x, self.encrypt_block(previous))
+            previous = encrypted
+            blocks.append(encrypted)
 
-        return b"".join(encrypted_blocks)
+        return b"".join(blocks)
+
+    def decrypt_cfb(self, cipher_text: bytes) -> bytes:
+        """Decrypt cipher text created using CFB (Cipher FeedBack) mode"""
+        blocks = []
+        previous = self.iv
+        for x in self.split_blocks(cipher_text):
+            decrypted = xor_bytes(x, self.encrypt_block(previous))
+            previous = decrypted
+            blocks.append(decrypted)
+
+        return b"".join(blocks)
+
+    def encrypt_ctr(self, plain_text: bytes) -> bytes:
+        """Encrypt using CTR (CounTeR) mode"""
+        blocks = []
+        new_iv = self.iv
+        for x in self.split_blocks(plain_text):
+            encrypted = xor_bytes(x, self.encrypt_block(new_iv))
+            blocks.append(encrypted)
+            new_iv = increment_bytes(new_iv)
+
+        return b"".join(blocks)
+
+    def decrypt_ctr(self, cipher_text: bytes) -> bytes:
+        """Decrypt cipher text created using CTR (CounTeR) mode"""
+        blocks = []
+        new_iv = self.iv
+        for x in self.split_blocks(cipher_text):
+            encrypted = xor_bytes(x, self.encrypt_block(new_iv))
+            blocks.append(encrypted)
+            new_iv = increment_bytes(new_iv)
+
+        return b"".join(blocks)
+
+    def encrypt(self, plain_text: bytes)
 
 
 if __name__ == "__main__":
-    import os
+    import os 
 
-    aes = AES(os.urandom(32), os.urandom(16))
+    aes = AES(os.urandom(24), os.urandom(16))
 
-    print(aes.encrypt_cfb(b"123"))
+    c = aes.encrypt_ctr(b"123")
+    d = aes.decrypt_ctr(c)
+
