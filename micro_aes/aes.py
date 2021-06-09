@@ -76,8 +76,6 @@ class AES:
         Available Modes:
             ECB (Electronic Codebook)
 
-        NOTE: Will be adding CBC, CTR, OFB and CFB modes soon!
-
         :param master_key: 128, 192 or 256 bit long byte string
         :returnType: NoneType
         :return: None
@@ -90,9 +88,7 @@ class AES:
                 "Key of length {} is not supported".format(len(master_key))
             )
 
-        # make sure the initialization vector is of the correct length
         assert len(iv) == 16
-
         self.master_key = master_key
         self.round_keys = self.expand_key()
         self.rounds = key_variants[len(self.master_key)]
