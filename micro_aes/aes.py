@@ -90,7 +90,7 @@ class AES:
                 "Key of length {} is not supported".format(len(master_key))
             )
 
-        # make sure the initialisation vector is of the correct length
+        # make sure the initialization vector is of the correct length
         assert len(iv) == 16
 
         self.master_key = master_key
@@ -229,19 +229,6 @@ class AES:
 
         return from_matrix(self.state)
 
-    def encrypt_ecb(self, plain_text: bytes) -> bytes:
-        """Encrypt using ECB (Electronic Codebook) mode
-        Not suitable for more than one block of cipher text (USE SPARINGLY)"""
-        blocks = self.split_blocks(self.add_padding(plain_text))
-        return b"".join([self.encrypt_block(block) for block in blocks])
-
-    def decrypt_ecb(self, cipher_text: bytes) -> bytes:
-        """Decrypt cipher text created using using ECB (Electronic Codebook) mode"""
-        blocks = self.split_blocks(cipher_text)
-        decrypted = b"".join([self.decrypt_block(block) for block in blocks])
-
-        return self.remove_padding(decrypted)
-
     def encrypt_cbc(self, plain_text: bytes) -> bytes:
         """Encrypt using CBC (Cipher Block Chaining) mode"""
         blocks = []
@@ -327,14 +314,24 @@ class AES:
 
         return b"".join(blocks)
 
-    def encrypt(self, plain_text: bytes)
+    def encrypt(self, plain_text: bytes, mode: str) -> bytes:
+        """Encrypt `plain_text` using specified AES `mode`"""
+        aes_modes = {
+            "cbc": self.encrypt_cbc,
+            "ctr": self.encrypt_ctr,
+            "cfb": self.encrypt_cfb,
+            "ofb": self.encrypt_ofb
+        }
+        assert mode in aes_modes
+        return aes_modes[mode](plain_text)
 
-
-if __name__ == "__main__":
-    import os 
-
-    aes = AES(os.urandom(24), os.urandom(16))
-
-    c = aes.encrypt_ctr(b"123")
-    d = aes.decrypt_ctr(c)
-
+    def decrypt(self, cipher_text: bytes, mode: str) -> bytes:
+        """Decrypt `cipher_text` created using specified AES `mode`"""
+        aes_modes = {
+            "cbc": self.decrypt_cbc,
+            "ctr": self.decrypt_ctr,
+            "cfb": self.decrypt_cfb,
+            "ofb": self.decrypt_ofb
+        }
+        assert mode in aes_modes
+        return aes_modes[mode](cipher_text)
