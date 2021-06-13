@@ -1,3 +1,6 @@
+import hmac
+import hashlib
+
 from micro_aes.constants import GF02
 from micro_aes.constants import GF03
 from micro_aes.constants import GF09
@@ -13,12 +16,14 @@ def xor_bytes(a: bytes, b: bytes) -> bytes:
     """XOR two byte strings"""
     return bytes([x ^ y for x, y in zip(a, b)])
 
+
 def increment_bytes(text: bytes) -> bytes:
     return int.to_bytes(
         int.from_bytes(bytes=text, byteorder="big") + 1,
         length=len(text),
         byteorder="big"
     )
+
 
 def to_matrix(text: bytes) -> list:
     """Convert 16-byte byte string into 4x4 matrix"""
@@ -225,7 +230,7 @@ class AES:
 
         return from_matrix(self.state)
 
-    def encrypt_cbc(self, plain_text: bytes) -> bytes:
+    def _encrypt_cbc(self, plain_text: bytes) -> bytes:
         """Encrypt using CBC (Cipher Block Chaining) mode"""
         blocks = []
         previous = self.iv
@@ -236,7 +241,7 @@ class AES:
 
         return b"".join(blocks)
 
-    def decrypt_cbc(self, cipher_text: bytes) -> bytes:
+    def _decrypt_cbc(self, cipher_text: bytes) -> bytes:
         """Decrypt cipher text created using CBC (Cipher Block Chaining) mode"""
         blocks = []
         previous = self.iv
@@ -246,7 +251,7 @@ class AES:
 
         return self.remove_padding(b"".join(blocks))
 
-    def encrypt_ofb(self, plain_text: bytes) -> bytes:
+    def _encrypt_ofb(self, plain_text: bytes) -> bytes:
         """Encrypt using OFB (Output FeedBack) mode"""
         new_iv = self.encrypt_block(self.iv)
         blocks = []
@@ -256,7 +261,7 @@ class AES:
 
         return b"".join(blocks)
 
-    def decrypt_ofb(self, cipher_text: bytes) -> bytes:
+    def _decrypt_ofb(self, cipher_text: bytes) -> bytes:
         """Decrypt cipher text created using OFB (Output FeedBack) mode"""
         new_iv = self.encrypt_block(self.iv)
         blocks = []
@@ -266,7 +271,7 @@ class AES:
 
         return b"".join(blocks)
 
-    def encrypt_cfb(self, plain_text: bytes) -> bytes:
+    def _encrypt_cfb(self, plain_text: bytes) -> bytes:
         """Encrypt using CFB (Cipher FeedBack) mode"""
         blocks = []
         previous = self.iv
@@ -277,7 +282,7 @@ class AES:
 
         return b"".join(blocks)
 
-    def decrypt_cfb(self, cipher_text: bytes) -> bytes:
+    def _decrypt_cfb(self, cipher_text: bytes) -> bytes:
         """Decrypt cipher text created using CFB (Cipher FeedBack) mode"""
         blocks = []
         previous = self.iv
@@ -288,7 +293,7 @@ class AES:
 
         return b"".join(blocks)
 
-    def encrypt_ctr(self, plain_text: bytes) -> bytes:
+    def _encrypt_ctr(self, plain_text: bytes) -> bytes:
         """Encrypt using CTR (CounTeR) mode"""
         blocks = []
         new_iv = self.iv
@@ -299,7 +304,7 @@ class AES:
 
         return b"".join(blocks)
 
-    def decrypt_ctr(self, cipher_text: bytes) -> bytes:
+    def _decrypt_ctr(self, cipher_text: bytes) -> bytes:
         """Decrypt cipher text created using CTR (CounTeR) mode"""
         blocks = []
         new_iv = self.iv
@@ -310,26 +315,27 @@ class AES:
 
         return b"".join(blocks)
 
-    def encrypt(self, plain_text: bytes, mode: str) -> bytes:
+    def encrypt(self, plain_text: bytes, mode: str, mac=True) -> bytes:
         """Encrypt `plain_text` using specified AES `mode`"""
         aes_modes = {
-            "cbc": self.encrypt_cbc,
-            "ctr": self.encrypt_ctr,
-            "cfb": self.encrypt_cfb,
-            "ofb": self.encrypt_ofb
+            "cbc": self._encrypt_cbc,
+            "ctr": self._encrypt_ctr,
+            "cfb": self._encrypt_cfb,
+            "ofb": self._encrypt_ofb
         }
         assert mode in aes_modes
         return aes_modes[mode](plain_text)
 
-    def decrypt(self, cipher_text: bytes, mode: str) -> bytes:
+    def decrypt(self, cipher_text: bytes, mode: str, mac=True) -> bytes:
         """Decrypt `cipher_text` created using specified AES `mode`"""
         aes_modes = {
-            "cbc": self.decrypt_cbc,
-            "ctr": self.decrypt_ctr,
-            "cfb": self.decrypt_cfb,
-            "ofb": self.decrypt_ofb
+            "cbc": self._decrypt_cbc,
+            "ctr": self._decrypt_ctr,
+            "cfb": self._decrypt_cfb,
+            "ofb": self._decrypt_ofb
         }
         assert mode in aes_modes
         return aes_modes[mode](cipher_text)
+       
 
 __all__ = ["AES"]
