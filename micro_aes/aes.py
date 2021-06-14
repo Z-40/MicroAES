@@ -1,3 +1,4 @@
+import os
 import hmac
 import hashlib
 
@@ -12,6 +13,16 @@ from micro_aes.constants import SUBSTITUTION_BOX
 from micro_aes.constants import INVERSE_SUBSTITUTION_BOX
 
 
+HASHES = {
+    "md5": hashlib.md5().digest_size,
+    "sha1": hashlib.sha1().digest_size,
+    "sha224": hashlib.sha224().digest_size,
+    "sha256": hashlib.sha256().digest_size,
+    "sha384": hashlib.sha384().digest_size,
+    "sha512": hashlib.sha512().digest_size,
+}
+
+
 def xor_bytes(a: bytes, b: bytes) -> bytes:
     """XOR two byte strings"""
     return bytes([x ^ y for x, y in zip(a, b)])
@@ -23,6 +34,16 @@ def increment_bytes(text: bytes) -> bytes:
         length=len(text),
         byteorder="big"
     )
+
+
+def calculate_data(password, salt, prf, aes_key_size, iterations=100000):
+    """Create an AES key, hmac key and iv"""
+    derived_key = hashlib.pbkdf2_hmac(prf, password, salt, iterations, aes_key_size + 32)
+    aes_key, derived_key = derived_key[:aes_key_size], derived_key[aes_key_size:]
+    hmac_key, derived_key = derived_key[:16], derived_key[16:]
+    iv = derived_key[:16]
+
+    return aes_key, hmac_key, iv
 
 
 def to_matrix(text: bytes) -> list:
@@ -76,28 +97,22 @@ class AES:
         column[2] = GF13[c[0]] ^ GF09[c[1]] ^ GF14[c[2]] ^ GF11[c[3]]
         column[3] = GF11[c[0]] ^ GF13[c[1]] ^ GF09[c[2]] ^ GF14[c[3]]
 
-    def __init__(self, master_key: bytes, iv: bytes) -> None:
+    def __init__(self, master_key: bytes, salt: bytes, strength: int, prf="sha256") -> None:
         """AES class for encrypting and decrypting
         Available Modes:
-            ECB (Electronic Codebook)
-
-        :param master_key: 128, 192 or 256 bit long byte string
-        :returnType: NoneType
-        :return: None
-        :raises: BadKeyLength when key entered is not of correct length,
-            i.e, 128, 192 or 156 bits
+            CBC (Cipher Block Chaining)
+            CFB (Cipher FeedBack)
+            CTR (CounTeR)
+            OFB (Output FeedBack)
         """
         key_variants = {16: 10, 24: 12, 32: 14}
-        if len(master_key) not in key_variants:
-            raise BadKeyLength(
-                "Key of length {} is not supported".format(len(master_key))
-            )
-
-        assert len(iv) == 16
-        self.master_key = master_key
+        key, hmac, iv = calculate_data(master_key, salt, prf, strength)
+        
+        self.master_key = key
         self.round_keys = self.expand_key()
         self.rounds = key_variants[len(self.master_key)]
         self.state = []
+        self.hmac = hmac
         self.iv = iv
 
     def substitute(self) -> None:
@@ -315,7 +330,7 @@ class AES:
 
         return b"".join(blocks)
 
-    def encrypt(self, plain_text: bytes, mode: str, mac=True) -> bytes:
+    def encrypt(self, plain_text: bytes, mode: str, hasher: str) -> bytes:
         """Encrypt `plain_text` using specified AES `mode`"""
         aes_modes = {
             "cbc": self._encrypt_cbc,
@@ -324,9 +339,15 @@ class AES:
             "ofb": self._encrypt_ofb
         }
         assert mode in aes_modes
-        return aes_modes[mode](plain_text)
+        assert hasher in HASHES
 
-    def decrypt(self, cipher_text: bytes, mode: str, mac=True) -> bytes:
+        cipher_text = aes_modes[mode](plain_text)
+        mac = hmac.new(self.hmac, plain_text, hasher).digest()
+
+        return mac + os.urandom(16) + cipher_text
+
+
+    def decrypt(self, cipher_text: bytes, mode: str, hasher: str) -> bytes:
         """Decrypt `cipher_text` created using specified AES `mode`"""
         aes_modes = {
             "cbc": self._decrypt_cbc,
@@ -335,7 +356,19 @@ class AES:
             "ofb": self._decrypt_ofb
         }
         assert mode in aes_modes
-        return aes_modes[mode](cipher_text)
-       
+        assert hasher in HASHES
+
+        digest_size = HASHES[hasher]
+
+        mac, cipher_text = cipher_text[:digest_size], cipher_text[digest_size:]
+        salt = cipher_text[:16]
+        cipher_text = cipher_text.strip(salt)
+        plain_text = aes_modes[mode](cipher_text)
+
+        expected_mac = hmac.new(self.hmac, plain_text, hasher).digest()
+
+        assert hmac.compare_digest(mac, expected_mac)
+        return plain_text
+
 
 __all__ = ["AES"]
