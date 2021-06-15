@@ -1,5 +1,6 @@
 import os
 import hmac
+import base64
 import hashlib
 
 from micro_aes.constants import GF02
@@ -369,6 +370,26 @@ class AES:
 
         assert hmac.compare_digest(mac, expected_mac)
         return plain_text
+
+    def encrypt_file(self, in_file: str, out_file: str, mode: str, hasher: str) -> None:
+        with open(in_file, "r") as f:
+            in_file_data = bytes(f.read(), "utf-8")
+
+        with open(out_file, "w") as f:
+            f.write(
+                base64.encodebytes(self.encrypt(in_file_data, mode, hasher))
+                .decode("utf-8")
+            )
+
+    def decrypt_file(self, in_file: str, out_file: str, mode: str, hasher: str) -> None:
+        with open(in_file, "r") as f:
+            in_file_data = bytes(f.read(), "utf-8")
+
+        with open(out_file, "w") as f:
+            f.write(
+                self.decrypt(base64.decodebytes(in_file_data), mode, hasher)
+                .decode("utf-8")
+            )
 
 
 __all__ = ["AES"]
