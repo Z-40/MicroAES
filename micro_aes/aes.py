@@ -375,21 +375,17 @@ class AES:
         with open(in_file, "r") as f:
             in_file_data = bytes(f.read(), "utf-8")
 
+        encrypted = base64.encodebytes(self.encrypt(in_file_data, mode, hasher))
         with open(out_file, "w") as f:
-            f.write(
-                base64.encodebytes(self.encrypt(in_file_data, mode, hasher))
-                .decode("utf-8")
-            )
+            f.write(encrypted.decode("utf-8"))
 
     def decrypt_file(self, in_file: str, out_file: str, mode: str, hasher: str) -> None:
         with open(in_file, "r") as f:
             in_file_data = bytes(f.read(), "utf-8")
 
+        decrypted = self.decrypt(base64.decodebytes(in_file_data), mode, hasher)
         with open(out_file, "w") as f:
-            f.write(
-                self.decrypt(base64.decodebytes(in_file_data), mode, hasher)
-                .decode("utf-8")
-            )
+            f.write(decrypted.decode("utf-8"))
 
 
 __all__ = ["AES"]
