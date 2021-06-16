@@ -372,19 +372,19 @@ class AES:
         return plain_text
 
     def encrypt_file(self, in_file: str, out_file: str, mode: str, hasher: str) -> None:
-        with open(in_file, "r") as f:
-            in_file_data = bytes(f.read(), "utf-8")
+        with open(in_file, "rb") as f:
+            in_file_data = f.read()
 
         encrypted = base64.encodebytes(self.encrypt(in_file_data, mode, hasher))
-        with open(out_file, "w") as f:
+        with open(out_file, "wb") as f:
             f.write(encrypted.decode("utf-8"))
 
     def decrypt_file(self, in_file: str, out_file: str, mode: str, hasher: str) -> None:
-        with open(in_file, "r") as f:
-            in_file_data = bytes(f.read(), "utf-8")
+        with open(in_file, "rb") as f:
+            in_file_data = f.read()
 
         decrypted = self.decrypt(base64.decodebytes(in_file_data), mode, hasher)
-        with open(out_file, "w") as f:
+        with open(out_file, "wb") as f:
             f.write(decrypted.decode("utf-8"))
 
 
