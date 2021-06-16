@@ -4,7 +4,7 @@ DESCRIPTION = "A pure python implementation of the AES encryption algorithm"
 
 setup(
     name="micro_aes",
-    version="2021.2",
+    version="2021.3",
     license="GNU General Public License Version 3.0",
     author="Z-40",
     description=DESCRIPTION,
