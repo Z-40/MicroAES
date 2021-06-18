@@ -1,6 +1,5 @@
 import os
 import hmac
-import base64
 import hashlib
 
 from micro_aes.constants import GF02
@@ -23,6 +22,7 @@ HASHES = {
     "sha512": hashlib.sha512().digest_size,
 }
 
+BUFFER = 999999999
 
 def xor_bytes(a: bytes, b: bytes) -> bytes:
     """XOR two byte strings"""
@@ -371,21 +371,26 @@ class AES:
         assert hmac.compare_digest(mac, expected_mac)
         return plain_text
 
-    def encrypt_file(self, in_file: str, out_file: str, mode: str, hasher: str) -> None:
-        with open(in_file, "rb") as f:
+    def encrypt_file(self, in_file: str, mode: str, hasher: str) -> None:
+        with open(in_file, "rb", buffering=BUFFER) as f:
             in_file_data = f.read()
 
-        encrypted = base64.encodebytes(self.encrypt(in_file_data, mode, hasher))
-        with open(out_file, "wb") as f:
-            f.write(encrypted)
-
-    def decrypt_file(self, in_file: str, out_file: str, mode: str, hasher: str) -> None:
-        with open(in_file, "rb") as f:
+        out_file = self.encrypt(bytes(os.path.split(in_file)[1], "UTF-8"), mode, hasher)
+        out_file_path = os.path.split(in_file)[0] + "\\" + bytes.hex(out_file)
+        with open(out_file_path, "wb", buffering=BUFFER) as f:
+            f.write(self.encrypt(in_file_data, mode, hasher))
+            f.flush()
+            
+    def decrypt_file(self, in_file: str, mode: str, hasher: str) -> None:
+        with open(in_file, "rb", buffering=BUFFER) as f:
             in_file_data = f.read()
 
-        decrypted = self.decrypt(base64.decodebytes(in_file_data), mode, hasher)
-        with open(out_file, "wb") as f:
-            f.write(decrypted)
+        out_file = self.decrypt(bytes.fromhex(os.path.split(in_file)[1]), mode, hasher)
+        out_file = out_file.decode("UTF-8")
 
+        out_file_path = os.path.split(in_file)[0] + "\\" + out_file
+        with open(out_file_path, "wb", buffering=BUFFER) as f:
+            f.write(self.decrypt(in_file_data, mode, hasher))
+            f.flush()
 
 __all__ = ["AES"]
