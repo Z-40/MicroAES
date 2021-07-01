@@ -31,5 +31,4 @@ Fix major mess-up in version 2021.4 where micro_aes was not included in the pack
 # Version 2021.6 - Released June 29th, 2021
 - Use SCRYPT instead of PBKDF#2 for key stretching as PBKDF#2 is considered insecure
 - Improve Documentation
-_ Slightly improve performance
 - Reformat code  
