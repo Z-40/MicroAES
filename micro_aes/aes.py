@@ -3,7 +3,6 @@
 """Allows the user to encrypt/decrypt using AES (Advanced Encryption Standard) with
 CBC, CTR, CFB and OFB modes of encryption and HMAC for authentication"""
 
-import gc
 import os
 import hmac
 import hashlib
