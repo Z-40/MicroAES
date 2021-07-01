@@ -3,14 +3,14 @@
 """Allows the user to encrypt/decrypt using AES (Advanced Encryption Standard) with
 CBC, CTR, CFB and OFB modes of encryption and HMAC for authentication"""
 
-
+import gc
 import os
 import hmac
 import hashlib
 
 from typing import List
-from typing import Union
-from typing import Generator
+# from typing import Union
+# from typing import Generator
 
 from micro_aes.constants import GF02
 from micro_aes.constants import GF03
@@ -104,9 +104,9 @@ class AES:
         return plain_text[:-plain_text[-1]]
 
     @staticmethod
-    def split_blocks(text: bytes) -> Generator[Union[int, bytes]]:
+    def split_blocks(text: bytes) -> list:
         """Split a byte string into 16-byte blocks"""
-        return (text[x:x+16] for x in range(0, len(text), 16))
+        return [text[x:x+16] for x in range(0, len(text), 16)]
 
     @staticmethod
     def mix_single_column(column: list) -> None:
@@ -436,7 +436,6 @@ class AES:
 
         # Encrypt the file name
         out_file = self.encrypt(bytes(os.path.split(in_file)[1], "UTF-8"), mode, hasher)
-        print(out_file)
         out_file_path = os.path.split(in_file)[0] + "\\" + bytes.hex(out_file)
 
         # Create the file and write encrypted data
